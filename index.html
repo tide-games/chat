@@ -53,7 +53,12 @@ main{flex:1;display:flex;justify-content:center;padding:18px 16px 0;min-height:0
 .msg .n.me{color:var(--gold-dk)}
 .msg .n.bot{color:var(--red)}
 .msg .c{white-space:pre-wrap;word-break:break-word}
-.msg.muted{display:none}
+.msg.muted > *{display:none}
+.msg.muted{display:block;padding:2px 0}
+.msg .stub{display:inline;background:none;border:0;color:var(--ink-soft);font:inherit;font-size:12px;font-style:italic;padding:0;cursor:pointer}
+.msg .stub:hover{text-decoration:underline}
+#mutebar{font-size:12px;color:#b8ac9a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#mutebar a{color:#5fc7d6;text-decoration:none}
 .sys{color:var(--ink-soft);font-style:italic;font-size:13px;padding:8px 0;text-align:center}
 #compose{display:flex;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:var(--parch-2);border-radius:0}
 #compose textarea{flex:1;font:inherit;font-size:15px;resize:none;height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff9ea;color:var(--ink)}
@@ -80,6 +85,7 @@ dialog label input{margin-top:4px;margin-bottom:0;font-family:Georgia,serif;font
   <a class="word" href="https://tide-games.github.io/"><b>Tide</b> Games · chat</a>
   <span class="chan">channel <b id="chan-name">…</b></span>
   <span class="spacer"></span>
+  <span id="mutebar" hidden></span>
   <span id="who"></span>
   <nav>
     <a href="https://nostr.social/tideholm/">Tideholm</a>

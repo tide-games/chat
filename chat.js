@@ -127,9 +127,32 @@ function toggleMute(pk) {
   applyMutes();
   sys(m.has(pk) ? `muted ${names.get(pk) || short(pk)} — click the name again to unmute` : `unmuted ${names.get(pk) || short(pk)}`);
 }
+// A muted line collapses to a stub rather than vanishing, so the way back is
+// always on screen; a header control lists how many are muted and clears them.
 function applyMutes() {
   const m = muted();
-  document.querySelectorAll('.msg').forEach((el) => el.classList.toggle('muted', m.has(el.dataset.pk)));
+  document.querySelectorAll('.msg').forEach((el) => {
+    const isMuted = m.has(el.dataset.pk);
+    el.classList.toggle('muted', isMuted);
+    let stub = el.querySelector('.stub');
+    if (isMuted && !stub) {
+      stub = document.createElement('button'); stub.type = 'button'; stub.className = 'stub';
+      stub.textContent = `muted ${names.get(el.dataset.pk) || short(el.dataset.pk)} — show`;
+      stub.addEventListener('click', () => toggleMute(el.dataset.pk));
+      el.appendChild(stub);
+    } else if (!isMuted && stub) stub.remove();
+  });
+  const bar = $('#mutebar');
+  if (bar) {
+    bar.hidden = m.size === 0;
+    if (m.size) bar.textContent = '';
+    if (m.size) {
+      bar.appendChild(document.createTextNode(`${m.size} muted · `));
+      const a = document.createElement('a'); a.href = '#'; a.textContent = 'unmute all';
+      a.addEventListener('click', (e) => { e.preventDefault(); try { localStorage.removeItem(MUTE_KEY); } catch { /* ok */ } applyMutes(); sys('everyone is unmuted'); });
+      bar.appendChild(a);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- render
@@ -159,8 +182,9 @@ function flush(eose) {
     n.textContent = names.get(ev.pubkey) || short(ev.pubkey);
     if (ev.pubkey === me) n.classList.add('me');
     if (KNOWN_BOTS.test(n.textContent)) n.classList.add('bot');
-    n.title = ev.pubkey + ' — click to mute/unmute';
-    n.addEventListener('click', () => toggleMute(ev.pubkey));
+    // your own name opens your profile; anyone else's mutes (a stub stays to undo it)
+    n.title = ev.pubkey === me ? 'you — edit your profile' : ev.pubkey + ' — click to mute';
+    n.addEventListener('click', () => { if (n.dataset.pk === me) openProfile(); else toggleMute(n.dataset.pk); });
     const c = document.createElement('div'); c.className = 'c'; c.textContent = ev.content;
     body.appendChild(n); body.appendChild(c);
     row.appendChild(t); row.appendChild(body);
@@ -282,7 +306,8 @@ function renderWho() {
     $('#text').disabled = true; $('#send').disabled = true; $('#text').placeholder = 'Sign in to speak';
     return;
   }
-  const s = document.createElement('span'); s.className = 'me'; s.dataset.pk = me; s.textContent = names.get(me) || short(me); s.title = me;
+  const s = document.createElement('span'); s.className = 'me'; s.dataset.pk = me; s.textContent = names.get(me) || short(me); s.title = me + ' — edit your profile';
+  s.style.cursor = 'pointer'; s.addEventListener('click', openProfile);
   const pf = document.createElement('button'); pf.className = 'quiet'; pf.textContent = 'Profile'; pf.addEventListener('click', openProfile);
   const out = document.createElement('button'); out.className = 'quiet'; out.textContent = 'Sign out';
   out.addEventListener('click', () => { if (signer && signer.forget) signer.forget(); signer = null; me = null; renderWho(); sys('signed out — the key is forgotten in this browser'); });
