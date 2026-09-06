@@ -26,8 +26,10 @@ This is the standalone proof of concept. No build, no server, no accounts:
 - **Mute** by clicking a name; the list lives in localStorage.
 - **Profile**: once signed in, *Profile* edits your kind-0 (name, about, picture URL).
   The current profile is loaded first from the relays and the directory, so a
-  real nostr identity is edited, never wiped; unknown fields ride along. Publishing
-  a profile is also what makes the stricter relays start accepting a new key.
+  real nostr identity is edited, never wiped; unknown fields ride along.
+  (Tested: nos.lol and nostr.mom accept the kind-0 but still refuse kind-42 chat
+  from a new key afterwards — their filter is not "has a profile". They stay
+  read-only for fresh game keys; Primal and Damus carry the writes.)
 
 ## Knobs
 

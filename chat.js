@@ -9,8 +9,9 @@
 const q = new URLSearchParams(location.search);
 // Order matters a little: the first relay is the hint carried in every
 // message's channel tag. Primal and Damus take events from any key; nos.lol
-// and nostr.mom answer "not acceptable at this point" to keys they have never
-// seen — they still serve as readers, and warm up once a key has a profile.
+// and nostr.mom answer "not acceptable at this point" to chat from keys they
+// do not trust (a kind-0 profile alone does not change their mind — tested);
+// they still serve as readers.
 const RELAYS = (q.get('relay') || 'wss://relay.primal.net,wss://relay.damus.io,wss://nos.lol,wss://nostr.mom')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const CHANNEL = (q.get('channel') || 'b23bee14ecec248bbf04b18aedf48626dc36518d76a994f5413302659567f949').toLowerCase();
