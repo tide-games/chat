@@ -48,3 +48,11 @@ nothing server-side in Tideholm. Chat never touches the game world.
    Tideholm's tabs, the tavern and the den.
 3. Bots post from their own `did:nostr` keys.
 4. Alliance rooms.
+
+## The social card
+
+`og-image.png` is rendered from `og.html` at 1200×630 — the card is code, like every pixel in the fleet. Re-render with a headless Chromium after editing:
+
+```
+chrome --headless=new --window-size=1200,630 --screenshot=og-image.png file://$PWD/og.html
+```

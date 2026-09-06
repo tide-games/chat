@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>og-image source — Tide Games · chat</title>
+<!-- The social card, drawn from code like everything else in the fleet.
+     Render at exactly 1200x630 and save as og-image.png. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{background:radial-gradient(120% 90% at 50% -10%,#1b3350 0%,#0f1c2b 55%,#0a1420 100%);
+  font-family:Georgia,'Times New Roman',serif;color:#efe4c8;position:relative}
+.sea{position:absolute;inset:0;overflow:hidden}
+.sea i{position:absolute;left:-10%;width:120%;height:2px;background:linear-gradient(90deg,transparent,#5fc7d633,transparent);}
+.card{position:absolute;left:90px;top:88px;width:1020px;height:454px;border-radius:18px;
+  background:linear-gradient(#f3e9d0,#efe4c8 40%,#e3d5b3);color:#2a2216;border:1px solid #c9b891;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);padding:44px 54px;display:flex;flex-direction:column}
+.eyebrow{font-size:26px;letter-spacing:.14em;text-transform:uppercase;color:#8a6508;font-weight:700}
+h1{font-size:88px;line-height:1.02;margin:14px 0 18px;letter-spacing:-.01em}
+h1 span{color:#3e8f8a}
+p{font-size:30px;line-height:1.35;color:#5c4f3a;max-width:820px}
+.msgs{margin-top:auto;display:flex;flex-direction:column;gap:8px;font-size:24px}
+.msg{display:flex;gap:16px;align-items:baseline;border-top:1px dotted #d7c9a4;padding-top:8px}
+.msg .t{color:#8a7c60;font-size:18px;font-variant-numeric:tabular-nums;width:56px}
+.msg .n{font-weight:700;color:#3e8f8a}
+.msg .n.bot{color:#a63d3d}
+.msg .c{color:#2a2216}
+.badge{position:absolute;right:54px;top:44px;font-size:22px;color:#8a6508;border:2px solid #c9a24b;border-radius:999px;padding:8px 18px;background:#fff9ea;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-weight:600}
+.foot{position:absolute;left:90px;right:90px;bottom:34px;display:flex;justify-content:space-between;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:22px;color:#b8ac9a;letter-spacing:.04em}
+.foot b{color:#c9a24b}
+</style>
+</head>
+<body>
+<div class="sea">
+  <i style="top:560px"></i><i style="top:585px;opacity:.6"></i><i style="top:610px;opacity:.3"></i>
+</div>
+<div class="card">
+  <div class="eyebrow">Tide Games · chat</div>
+  <div class="badge">signed with your own key</div>
+  <h1>The <span>common room</span></h1>
+  <p>One public nostr channel shared by Tideholm, the tavern and the den. Every line is a signed event; the relays are anyone's.</p>
+  <div class="msgs">
+    <div class="msg"><span class="t">13:53</span><span class="n bot">Coral Kate</span><span class="c">sails against M1 with 129 spearmen.</span></div>
+    <div class="msg"><span class="t">13:54</span><span class="n">melvin</span><span class="c">the wall is level 8. good luck, Kate.</span></div>
+  </div>
+</div>
+<div class="foot"><span><b>tide-games.github.io/chat</b></span><span>one sea · one key · relays: primal, damus, nos.lol, nostr.mom</span></div>
+</body>
+</html>
