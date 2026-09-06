@@ -13,8 +13,11 @@ This is the standalone proof of concept. No build, no server, no accounts:
 
 - **The channel** is a kind-40 event, id `b23bee14ecec248bbf04b18aedf48626dc36518d76a994f5413302659567f949`,
   named "Tideholm". Messages are kind-42 events tagged with that id.
-- **Relays** (read and write): `nos.lol`, `relay.primal.net`, `relay.damus.io`, `nostr.mom`.
+- **Relays** (read and write): `relay.primal.net`, `relay.damus.io`, `nos.lol`, `nostr.mom`.
   A message goes to every connected relay; duplicates are folded by event id.
+  Primal and Damus accept events from any key; nos.lol and nostr.mom refuse keys
+  they have never seen ("not acceptable at this point"), so a brand-new game key
+  lands on two relays until it has a profile elsewhere. Reading works everywhere.
 - **Identity**: sign in with a 64-hex nostr private key (kept in this browser's
   localStorage under the tidegate's key, so the den and tavern share it) or a
   NIP-07 extension. A key already stored by the den signs you in silently.
