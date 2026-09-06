@@ -135,7 +135,14 @@ function scroll() { log.scrollTop = log.scrollHeight; }
 let firstFlush = true;
 function flush(eose) {
   if (firstFlush && (pending.length || eose)) { log.textContent = ''; firstFlush = false; }
-  if (!pending.length) { if (eose && !log.querySelector('.msg')) sys('nobody has spoken yet — be the first'); return; }
+  if (!pending.length) {
+    // every relay sends its own end-of-history; say "empty" once, and only while it is
+    if (eose && !log.querySelector('.msg') && !log.querySelector('.sys.empty')) {
+      const d = document.createElement('div'); d.className = 'sys empty'; d.textContent = 'nobody has spoken yet — be the first'; log.appendChild(d);
+    }
+    return;
+  }
+  log.querySelectorAll('.sys.empty').forEach((el) => el.remove());
   pending.sort((a, b) => a.created_at - b.created_at);
   for (const ev of pending.splice(0)) {
     const row = document.createElement('div');
