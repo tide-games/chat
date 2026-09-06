@@ -70,6 +70,8 @@ dialog h2{font-size:18px;margin-bottom:8px}
 dialog p{font-size:14px;color:var(--ink-soft);line-height:1.5;margin-bottom:12px}
 dialog input{width:100%;font:inherit;font-family:ui-monospace,Menlo,monospace;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff9ea;margin-bottom:12px}
 dialog .row{display:flex;gap:10px;flex-wrap:wrap}
+dialog label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+dialog label input{margin-top:4px;margin-bottom:0;font-family:Georgia,serif;font-size:15px}
 @media (max-width:640px){header{flex-wrap:wrap}header .chan{display:none}main{padding:10px 8px 0}.msg{grid-template-columns:44px 1fr}}
 </style>
 </head>
@@ -106,6 +108,19 @@ dialog .row{display:flex;gap:10px;flex-wrap:wrap}
   <div class="row">
     <button id="use-key" type="button">Use this key</button>
     <button id="cancel" type="button" class="quiet">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="profile">
+  <h2>Your profile</h2>
+  <p>A signed kind-0 event: this is how the room, the nostr.social directory and every
+  nostr client name you. Existing fields are loaded first, so editing never wipes a profile.</p>
+  <label>Name<input id="pf-name" maxlength="64" placeholder="how the room should know you"></label>
+  <label>About<input id="pf-about" maxlength="200" placeholder="one line, optional"></label>
+  <label>Picture URL<input id="pf-picture" maxlength="300" placeholder="https://… (optional)" spellcheck="false"></label>
+  <div class="row">
+    <button id="pf-save" type="button">Publish</button>
+    <button id="pf-cancel" type="button" class="quiet">Cancel</button>
   </div>
 </dialog>
 

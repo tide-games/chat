@@ -27,6 +27,7 @@ const hhmm = (ts) => new Date(ts * 1000).toTimeString().slice(0, 5);
 
 // ---------------------------------------------------------------- relays
 const sockets = new Map();   // url -> WebSocket
+const acks = new Map();      // event id -> (relay, accepted, reason) while a publish is in flight
 const seen = new Set();      // event ids already rendered
 const pending = [];          // events waiting for names before render
 let signer = null;           // { pubkey, sign(bytes) } — tidegate shape
@@ -54,6 +55,7 @@ function connect(url) {
     let msg; try { msg = JSON.parse(m.data); } catch { return; }
     if (msg[0] === 'EVENT') onEvent(msg[2], url);
     if (msg[0] === 'EOSE' && msg[1] === 'room') flush(true);
+    if (msg[0] === 'OK') { const cb = acks.get(msg[1]); if (cb) cb(url, !!msg[2], msg[3] || ''); }
   };
   ws.onclose = () => { status(); setTimeout(() => connect(url), 5000 + Math.random() * 5000); };
   ws.onerror = () => status();
@@ -101,15 +103,18 @@ async function wantName(pk) {
   rerenderNames(pk);
 }
 // kind-0 answers to the name requests above arrive like any other event.
+const profiles = new Map();  // pubkey -> { content, created_at } — the newest kind-0 seen
 function onProfile(ev) {
   try {
     const p = JSON.parse(ev.content);
+    const have = profiles.get(ev.pubkey);
+    if (!have || have.created_at < ev.created_at) profiles.set(ev.pubkey, { content: p, created_at: ev.created_at });
     const n = p.display_name || p.name;
-    if (n && (!names.has(ev.pubkey) || names.get(ev.pubkey) === short(ev.pubkey))) { names.set(ev.pubkey, n); rerenderNames(ev.pubkey); }
+    if (n && (!names.has(ev.pubkey) || names.get(ev.pubkey) === short(ev.pubkey) || ev.pubkey === me)) { names.set(ev.pubkey, n); rerenderNames(ev.pubkey); }
   } catch { /* ignore */ }
 }
 function rerenderNames(pk) {
-  document.querySelectorAll(`.n[data-pk="${pk}"]`).forEach((el) => { el.textContent = names.get(pk); el.classList.toggle('bot', KNOWN_BOTS.test(names.get(pk))); });
+  document.querySelectorAll(`.n[data-pk="${pk}"], #who .me[data-pk="${pk}"]`).forEach((el) => { el.textContent = names.get(pk); el.classList.toggle('bot', KNOWN_BOTS.test(names.get(pk))); });
 }
 
 // ---------------------------------------------------------------- mute
@@ -170,14 +175,10 @@ function flush(eose) {
 // ---------------------------------------------------------------- speaking
 async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
 
-async function say(text) {
-  const ev = {
-    pubkey: me,
-    created_at: Math.floor(Date.now() / 1000),
-    kind: 42,
-    tags: [['e', CHANNEL, RELAYS[0], 'root']],
-    content: text,
-  };
+// Sign an event with whoever is signed in, send it to every connected relay,
+// and wait (briefly) for their answers. Resolves { ev, ok: [urls], refused: [[url, reason]] }.
+async function publish(kind, tags, content) {
+  const ev = { pubkey: me, created_at: Math.floor(Date.now() / 1000), kind, tags, content };
   const ser = JSON.stringify([0, ev.pubkey, ev.created_at, ev.kind, ev.tags, ev.content]);
   const bytes = new TextEncoder().encode(ser);
   ev.id = hex(await sha256(bytes));
@@ -187,11 +188,73 @@ async function say(text) {
   } else {
     ev.sig = await signer.sign(bytes);             // tidegate: schnorr(sha256(bytes)) = schnorr(id)
   }
-  let sent = 0;
-  for (const ws of sockets.values()) if (ws.readyState === 1) { ws.send(JSON.stringify(['EVENT', ev])); sent++; }
-  if (!sent) throw new Error('no relay is connected');
-  onEvent(ev, 'self'); // show at once; relays will echo the same id and be deduped
+  const live = [...sockets.entries()].filter(([, ws]) => ws.readyState === 1);
+  if (!live.length) throw new Error('no relay is connected');
+  const ok = [], refused = [];
+  const done = new Promise((resolve) => {
+    const finish = () => { acks.delete(ev.id); resolve(); };
+    const timer = setTimeout(finish, 4000);
+    acks.set(ev.id, (url, accepted, reason) => {
+      (accepted ? ok : refused).push(accepted ? url : [url, reason]);
+      if (ok.length + refused.length >= live.length) { clearTimeout(timer); finish(); }
+    });
+  });
+  for (const [, ws] of live) ws.send(JSON.stringify(['EVENT', ev]));
+  await done;
+  return { ev, ok, refused };
 }
+
+async function say(text) {
+  const { ev, ok, refused } = await publish(42, [['e', CHANNEL, RELAYS[0], 'root']], text);
+  onEvent(ev, 'self'); // show at once; relays echo the same id and are deduped
+  if (!ok.length) sys('no relay accepted that: ' + refused.map(([u, r]) => u.replace('wss://', '') + ' — ' + r).join('; '));
+}
+
+// ---------------------------------------------------------------- profile (kind 0)
+// The newest profile we know for the signed-in key is loaded FIRST, so someone
+// arriving with a real nostr identity (NIP-07) edits their profile rather than
+// wiping it. Unknown fields ride along untouched.
+async function openProfile() {
+  const dlg = $('#profile');
+  const have = profiles.get(me);
+  if (!have) {
+    // ask the relays and the directory, then give them a moment
+    for (const ws of sockets.values()) if (ws.readyState === 1) ws.send(JSON.stringify(['REQ', 'me-0', { kinds: [0], authors: [me], limit: 1 }]));
+    try {
+      const r = await fetch(`${DIRECTORY}/api/profile/${me}`);
+      const p = r.ok ? await r.json() : null;
+      if (p && !profiles.has(me)) profiles.set(me, { content: { name: p.name, about: p.about, picture: p.picture, display_name: p.display_name }, created_at: 0 });
+    } catch { /* directory down */ }
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  const cur = (profiles.get(me) || { content: {} }).content;
+  $('#pf-name').value = cur.name || cur.display_name || '';
+  $('#pf-about').value = cur.about || '';
+  $('#pf-picture').value = cur.picture || '';
+  dlg.showModal();
+}
+$('#pf-cancel').addEventListener('click', () => $('#profile').close());
+$('#pf-save').addEventListener('click', async () => {
+  const cur = (profiles.get(me) || { content: {} }).content;
+  const next = { ...cur };
+  const name = $('#pf-name').value.trim(), about = $('#pf-about').value.trim(), picture = $('#pf-picture').value.trim();
+  if (!name) { sys('a profile needs at least a name'); return; }
+  if (picture && !/^https?:\/\//.test(picture)) { sys('the picture must be an http(s) URL'); return; }
+  next.name = name; if (cur.display_name) next.display_name = name;
+  if (about) next.about = about; else delete next.about;
+  if (picture) next.picture = picture; else delete next.picture;
+  for (const k of Object.keys(next)) if (next[k] == null || next[k] === '') delete next[k];
+  $('#pf-save').disabled = true;
+  try {
+    const { ev, ok, refused } = await publish(0, [], JSON.stringify(next));
+    profiles.set(me, { content: next, created_at: ev.created_at });
+    names.set(me, name); rerenderNames(me);
+    $('#profile').close();
+    sys(`profile published — accepted by ${ok.length} relay${ok.length === 1 ? '' : 's'}`
+      + (refused.length ? `; refused by ${refused.map(([u, r]) => u.replace('wss://', '') + (r ? ' (' + r + ')' : '')).join(', ')}` : ''));
+  } catch (err) { sys('could not publish the profile: ' + (err.message || err)); }
+  $('#pf-save').disabled = false;
+});
 
 $('#compose').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -219,9 +282,10 @@ function renderWho() {
     return;
   }
   const s = document.createElement('span'); s.className = 'me'; s.dataset.pk = me; s.textContent = names.get(me) || short(me); s.title = me;
+  const pf = document.createElement('button'); pf.className = 'quiet'; pf.textContent = 'Profile'; pf.addEventListener('click', openProfile);
   const out = document.createElement('button'); out.className = 'quiet'; out.textContent = 'Sign out';
   out.addEventListener('click', () => { if (signer && signer.forget) signer.forget(); signer = null; me = null; renderWho(); sys('signed out — the key is forgotten in this browser'); });
-  who.appendChild(s); who.appendChild(out);
+  who.appendChild(s); who.appendChild(pf); who.appendChild(out);
   $('#text').disabled = false; $('#send').disabled = false; $('#text').placeholder = 'Say something to the fleet…';
   wantName(me);
 }

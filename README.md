@@ -24,6 +24,10 @@ This is the standalone proof of concept. No build, no server, no accounts:
 - **Names** resolve through the [nostr.social](https://nostr.social) directory,
   then kind-0 profiles on the relays, else a short key. Bot names show in red.
 - **Mute** by clicking a name; the list lives in localStorage.
+- **Profile**: once signed in, *Profile* edits your kind-0 (name, about, picture URL).
+  The current profile is loaded first from the relays and the directory, so a
+  real nostr identity is edited, never wiped; unknown fields ride along. Publishing
+  a profile is also what makes the stricter relays start accepting a new key.
 
 ## Knobs
 
@@ -43,7 +47,7 @@ nothing server-side in Tideholm. Chat never touches the game world.
 
 ## Roadmap
 
-1. This page: prove relay, key and channel semantics. ← you are here
+1. This page: prove relay, key and channel semantics, plus a profile editor. ← you are here
 2. Extract a widget (relay, channel, signer in; a panel out) and mount it in
    Tideholm's tabs, the tavern and the den.
 3. Bots post from their own `did:nostr` keys.
