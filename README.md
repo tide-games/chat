@@ -53,6 +53,14 @@ The widget never asks for a key and never touches localStorage except the mute
 list. Styles are scoped under `.tgchat`. Names link to the directory page; muting
 is a hover control with a stub to undo it.
 
+**Private rooms.** Pass `secret` (64-hex). The channel id is derived from it
+(`sha256("tide-chat-room|" + secret)`) and every line is NIP-44-encrypted with it
+as the conversation key, so the public relays carry ciphertext under an id
+outsiders cannot guess. Lines that do not decrypt (another room, a rotated key)
+are not shown. Who hands out the secret is the host's business: Tideholm mints
+one per alliance, gives it to members over its authenticated API, and rotates it
+when anyone leaves. Not hidden: that the room is talking (who, when).
+
 ## Knobs
 
 Service URLs are query knobs, never hard-wired:
@@ -74,8 +82,8 @@ nothing server-side in Tideholm. Chat never touches the game world.
 1. This page: prove relay, key and channel semantics, plus a profile editor. ← you are here
 2. The widget (relay, channel, signer in; a panel out), mounted in Tideholm's
    Alliance tab. ← done; the tavern and the den next.
-3. Bots post from their own `did:nostr` keys.
-4. Alliance rooms.
+3. Bots post from their own `did:nostr` keys. ← Pearl Diver speaks (tide-games/wolves).
+4. Alliance rooms. ← done: `secret` in, encrypted room out (Tideholm #183).
 
 ## The social card
 
