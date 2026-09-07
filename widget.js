@@ -89,7 +89,7 @@ export function mountChat(container, options = {}) {
   const root = document.createElement('div'); root.className = 'tgchat'; root.style.height = typeof o.height === 'number' ? o.height + 'px' : o.height;
   root.innerHTML = `
     <div class="tg-log"><div class="tg-sys">listening to the relays…</div></div>
-    <form class="tg-bar"><textarea maxlength="1000" placeholder="Reading only — no key to speak with" disabled></textarea><button type="submit" disabled>Say</button></form>
+    <form class="tg-bar"><textarea maxlength="1000" placeholder="${(o.readOnlyHint || 'Reading only — no key to speak with').replace(/"/g, '&quot;')}" disabled></textarea><button type="submit" disabled>Say</button></form>
     <div class="tg-foot"><span class="tg-relays"></span><span class="tg-muteinfo"></span><a class="tg-open" target="_blank" rel="noopener">open the room ↗</a></div>`;
   container.appendChild(root);
   const $ = (s) => root.querySelector(s);
