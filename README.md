@@ -31,6 +31,28 @@ This is the standalone proof of concept. No build, no server, no accounts:
   from a new key afterwards — their filter is not "has a profile". They stay
   read-only for fresh game keys; Primal and Damus carry the writes.)
 
+## The widget
+
+`widget.js` mounts the room into any element; the standalone page is its first host,
+Tideholm's Alliance tab the second.
+
+```js
+import { mountChat } from 'https://tide-games.github.io/chat/widget.js';
+const chat = mountChat(document.querySelector('#room'), {
+  relays, channel, directory,      // all optional; defaults are the fleet's
+  height: 360,                     // px or any CSS height
+  signer,                          // { pubkey, sign(bytes) } (tidegate) or { pubkey, signEvent(ev) } (NIP-07)
+  readOnlyHint: 'Sign in to speak' // placeholder when there is no signer
+});
+chat.setSigner(signer);            // the host owns identity; none = reading only
+chat.publishProfile({ name, about, picture });
+chat.currentProfile(); chat.requestProfile(); chat.names; chat.destroy();
+```
+
+The widget never asks for a key and never touches localStorage except the mute
+list. Styles are scoped under `.tgchat`. Names link to the directory page; muting
+is a hover control with a stub to undo it.
+
 ## Knobs
 
 Service URLs are query knobs, never hard-wired:
@@ -50,8 +72,8 @@ nothing server-side in Tideholm. Chat never touches the game world.
 ## Roadmap
 
 1. This page: prove relay, key and channel semantics, plus a profile editor. ← you are here
-2. Extract a widget (relay, channel, signer in; a panel out) and mount it in
-   Tideholm's tabs, the tavern and the den.
+2. The widget (relay, channel, signer in; a panel out), mounted in Tideholm's
+   Alliance tab. ← done; the tavern and the den next.
 3. Bots post from their own `did:nostr` keys.
 4. Alliance rooms.
 
