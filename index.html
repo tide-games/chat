@@ -42,36 +42,10 @@ button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--gold
 button.quiet{background:transparent;color:#b8ac9a;border-color:#ffffff30}
 button:disabled{opacity:.5;cursor:default}
 main{flex:1;display:flex;justify-content:center;padding:18px 16px 0;min-height:0}
-#room{width:100%;max-width:880px;display:flex;flex-direction:column;min-height:0;
-  background:linear-gradient(#f3e9d0,var(--parch) 40%,var(--parch-2));color:var(--ink);
-  border:1px solid var(--line);border-radius:12px 12px 0 0;box-shadow:0 18px 50px rgba(0,0,0,.5)}
-#log{flex:1;overflow-y:auto;padding:14px 18px;scroll-behavior:smooth}
-.msg{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:5px 0;border-bottom:1px dotted #d7c9a4}
-.msg .t{color:var(--ink-soft);font-size:12px;padding-top:3px;font-variant-numeric:tabular-nums}
-.msg .n{font-weight:700;cursor:pointer;color:var(--teal);text-decoration:none}
-.msg .n:hover{text-decoration:underline}
-.msg .mute{margin-left:8px;font:inherit;font-size:11px;padding:0 6px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--ink-soft);opacity:0;cursor:pointer;vertical-align:1px}
-.msg:hover .mute,.msg .mute:focus-visible{opacity:1}
-@media (hover:none){.msg .mute{opacity:.6}}
-.msg .n.me{color:var(--gold-dk)}
-.msg .n.bot{color:var(--red)}
-.msg .c{white-space:pre-wrap;word-break:break-word}
-.msg.muted > *{display:none}
-.msg.muted{display:block;padding:2px 0}
-.msg .stub{display:inline;background:none;border:0;color:var(--ink-soft);font:inherit;font-size:12px;font-style:italic;padding:0;cursor:pointer}
-.msg .stub:hover{text-decoration:underline}
-#mutebar{font-size:12px;color:#b8ac9a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#room{width:100%;max-width:880px;min-height:0;box-shadow:0 18px 50px rgba(0,0,0,.5);border-radius:12px;margin-bottom:16px}
+@media (hover:none){#mutebar{font-size:12px;color:#b8ac9a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 #mutebar a{color:#5fc7d6;text-decoration:none}
-.sys{color:var(--ink-soft);font-style:italic;font-size:13px;padding:8px 0;text-align:center}
-#compose{display:flex;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:var(--parch-2);border-radius:0}
-#compose textarea{flex:1;font:inherit;font-size:15px;resize:none;height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff9ea;color:var(--ink)}
-#compose textarea:disabled{background:#ede2c6;color:#8a7c60}
-#status{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px;color:#b8ac9a;
   display:flex;gap:16px;justify-content:center;padding:10px 16px 14px;flex-wrap:wrap}
-#status .r{display:inline-flex;align-items:center;gap:5px}
-#status .r i{width:8px;height:8px;border-radius:50%;background:#666;display:inline-block}
-#status .r.on i{background:#6fcf7a} #status .r.off i{background:#d66}
-#status a{color:#5fc7d6;text-decoration:none}
 dialog{margin:auto;border:1px solid var(--line);border-radius:12px;background:var(--parch);color:var(--ink);max-width:460px;padding:22px 24px;font-family:Georgia,serif}
 dialog::backdrop{background:rgba(5,10,18,.7)}
 dialog h2{font-size:18px;margin-bottom:8px}
@@ -80,8 +54,7 @@ dialog input{width:100%;font:inherit;font-family:ui-monospace,Menlo,monospace;fo
 dialog .row{display:flex;gap:10px;flex-wrap:wrap}
 dialog label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:10px}
 dialog label input{margin-top:4px;margin-bottom:0;font-family:Georgia,serif;font-size:15px}
-@media (max-width:640px){header{flex-wrap:wrap}header .chan{display:none}main{padding:10px 8px 0}.msg{grid-template-columns:44px 1fr}}
-</style>
+@media (max-width:640px){header{flex-wrap:wrap}header .chan{display:none}main{padding:10px 8px 0}</style>
 </head>
 <body>
 <header>
@@ -97,15 +70,9 @@ dialog label input{margin-top:4px;margin-bottom:0;font-family:Georgia,serif;font
   </nav>
 </header>
 <main>
-  <div id="room">
-    <div id="log"><div class="sys">listening to the relays…</div></div>
-    <form id="compose">
-      <textarea id="text" maxlength="1000" placeholder="Sign in to speak" disabled></textarea>
-      <button id="send" type="submit" disabled>Say</button>
-    </form>
-  </div>
+  <div id="room"></div>
 </main>
-<div id="status"></div>
+
 
 <dialog id="signin">
   <h2>Who speaks?</h2>
