@@ -5,6 +5,7 @@
 //     relays: [...], channel: '<64-hex>', directory: 'https://nostr.social',
 //     signer,            // { pubkey, sign(bytes) } (tidegate shape) or { pubkey, signEvent(ev) } (NIP-07)
 //     height: 360,       // px; the log scrolls inside
+//     onMessage(line),   // every line shown, history included: { id, pubkey, created_at, mine }
 //   });
 //   chat.setSigner(signer); chat.destroy();
 //
@@ -222,6 +223,7 @@ export function mountChat(container, options = {}) {
       let after = null;
       for (const el of log.querySelectorAll('.tg-msg')) { if (Number(el.dataset.ts) > ev.created_at) { after = el; break; } }
       log.insertBefore(row, after);
+      if (typeof o.onMessage === 'function') { try { o.onMessage({ id: ev.id, pubkey: ev.pubkey, created_at: ev.created_at, mine: ev.pubkey === me }); } catch { /* the host's problem */ } }
     }
     applyMutes(); scroll();
   }
@@ -286,6 +288,7 @@ export function mountChat(container, options = {}) {
     currentProfile: () => (me && profiles.get(me)) ? profiles.get(me).content : null,
     requestProfile: () => { if (me) for (const ws of sockets.values()) if (ws.readyState === 1) ws.send(JSON.stringify(['REQ', 'me-0', { kinds: [0], authors: [me], limit: 1 }])); },
     names,
+    scrollToEnd: scroll,   // a room mounted hidden cannot scroll until shown
     destroy() { alive = false; for (const ws of sockets.values()) { try { ws.close(); } catch { /* closed */ } } container.innerHTML = ''; },
   };
 }
