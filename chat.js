@@ -178,15 +178,21 @@ function flush(eose) {
     row.className = 'msg'; row.dataset.pk = ev.pubkey; row.dataset.ts = ev.created_at;
     const t = document.createElement('span'); t.className = 't'; t.textContent = hhmm(ev.created_at);
     const body = document.createElement('div');
-    const n = document.createElement('span'); n.className = 'n'; n.dataset.pk = ev.pubkey;
+    // A name is a link to the identity behind it (the nostr.social directory
+    // page); your own name opens your profile. Muting is its own small
+    // control that appears on hover — a name should never be a trap.
+    const n = document.createElement('a'); n.className = 'n'; n.dataset.pk = ev.pubkey;
     n.textContent = names.get(ev.pubkey) || short(ev.pubkey);
+    n.href = `${DIRECTORY}/${ev.pubkey}`; n.target = '_blank'; n.rel = 'noopener noreferrer';
     if (ev.pubkey === me) n.classList.add('me');
     if (KNOWN_BOTS.test(n.textContent)) n.classList.add('bot');
-    // your own name opens your profile; anyone else's mutes (a stub stays to undo it)
-    n.title = ev.pubkey === me ? 'you — edit your profile' : ev.pubkey + ' — click to mute';
-    n.addEventListener('click', () => { if (n.dataset.pk === me) openProfile(); else toggleMute(n.dataset.pk); });
+    n.title = ev.pubkey === me ? 'you — edit your profile' : ev.pubkey;
+    if (ev.pubkey === me) n.addEventListener('click', (e) => { e.preventDefault(); openProfile(); });
+    const mute = document.createElement('button'); mute.type = 'button'; mute.className = 'mute'; mute.textContent = 'mute';
+    mute.title = 'hide this person\'s lines (a stub stays to undo it)';
+    mute.addEventListener('click', () => toggleMute(ev.pubkey));
     const c = document.createElement('div'); c.className = 'c'; c.textContent = ev.content;
-    body.appendChild(n); body.appendChild(c);
+    body.appendChild(n); if (ev.pubkey !== me) body.appendChild(mute); body.appendChild(c);
     row.appendChild(t); row.appendChild(body);
     // keep chronological order even when relays answer out of turn
     let after = null;

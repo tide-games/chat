@@ -48,8 +48,11 @@ main{flex:1;display:flex;justify-content:center;padding:18px 16px 0;min-height:0
 #log{flex:1;overflow-y:auto;padding:14px 18px;scroll-behavior:smooth}
 .msg{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:5px 0;border-bottom:1px dotted #d7c9a4}
 .msg .t{color:var(--ink-soft);font-size:12px;padding-top:3px;font-variant-numeric:tabular-nums}
-.msg .n{font-weight:700;cursor:pointer;color:var(--teal)}
+.msg .n{font-weight:700;cursor:pointer;color:var(--teal);text-decoration:none}
 .msg .n:hover{text-decoration:underline}
+.msg .mute{margin-left:8px;font:inherit;font-size:11px;padding:0 6px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--ink-soft);opacity:0;cursor:pointer;vertical-align:1px}
+.msg:hover .mute,.msg .mute:focus-visible{opacity:1}
+@media (hover:none){.msg .mute{opacity:.6}}
 .msg .n.me{color:var(--gold-dk)}
 .msg .n.bot{color:var(--red)}
 .msg .c{white-space:pre-wrap;word-break:break-word}
