@@ -179,15 +179,14 @@ function flush(eose) {
     const t = document.createElement('span'); t.className = 't'; t.textContent = hhmm(ev.created_at);
     const body = document.createElement('div');
     // A name is a link to the identity behind it (the nostr.social directory
-    // page); your own name opens your profile. Muting is its own small
-    // control that appears on hover — a name should never be a trap.
+    // page), your own included. Muting is its own small control that appears
+    // on hover — a name should never be a trap.
     const n = document.createElement('a'); n.className = 'n'; n.dataset.pk = ev.pubkey;
     n.textContent = names.get(ev.pubkey) || short(ev.pubkey);
     n.href = `${DIRECTORY}/${ev.pubkey}`; n.target = '_blank'; n.rel = 'noopener noreferrer';
     if (ev.pubkey === me) n.classList.add('me');
     if (KNOWN_BOTS.test(n.textContent)) n.classList.add('bot');
-    n.title = ev.pubkey === me ? 'you — edit your profile' : ev.pubkey;
-    if (ev.pubkey === me) n.addEventListener('click', (e) => { e.preventDefault(); openProfile(); });
+    n.title = ev.pubkey;   // your own name links out like anyone's — the Profile button is the editor
     const mute = document.createElement('button'); mute.type = 'button'; mute.className = 'mute'; mute.textContent = 'mute';
     mute.title = 'hide this person\'s lines (a stub stays to undo it)';
     mute.addEventListener('click', () => toggleMute(ev.pubkey));
@@ -312,8 +311,8 @@ function renderWho() {
     $('#text').disabled = true; $('#send').disabled = true; $('#text').placeholder = 'Sign in to speak';
     return;
   }
-  const s = document.createElement('span'); s.className = 'me'; s.dataset.pk = me; s.textContent = names.get(me) || short(me); s.title = me + ' — edit your profile';
-  s.style.cursor = 'pointer'; s.addEventListener('click', openProfile);
+  const s = document.createElement('a'); s.className = 'me'; s.dataset.pk = me; s.textContent = names.get(me) || short(me); s.title = me;
+  s.href = `${DIRECTORY}/${me}`; s.target = '_blank'; s.rel = 'noopener noreferrer'; s.style.textDecoration = 'none';
   const pf = document.createElement('button'); pf.className = 'quiet'; pf.textContent = 'Profile'; pf.addEventListener('click', openProfile);
   const out = document.createElement('button'); out.className = 'quiet'; out.textContent = 'Sign out';
   out.addEventListener('click', () => { if (signer && signer.forget) signer.forget(); signer = null; me = null; renderWho(); sys('signed out — the key is forgotten in this browser'); });
