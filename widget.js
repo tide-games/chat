@@ -11,6 +11,11 @@
 // The host owns identity: hand in a signer and the room speaks as that key; hand
 // in none and it reads. The widget never asks for a key, never touches
 // localStorage except for the mute list, and carries its own scoped styles.
+//
+// A PRIVATE room: pass `secret` (64-hex, handed out by the host to members only).
+// The channel id is derived from it and every line is NIP-44-encrypted with it,
+// so the public relays carry ciphertext under an id outsiders cannot even
+// guess. Lines that do not decrypt (a rotated key) are simply not shown.
 
 const DEFAULTS = {
   relays: ['wss://relay.primal.net', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr.mom'],
@@ -64,8 +69,20 @@ const short = (pk) => pk.slice(0, 8) + '…' + pk.slice(-4);
 const hhmm = (ts) => new Date(ts * 1000).toTimeString().slice(0, 5);
 async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
 
+const utf8 = (s) => new TextEncoder().encode(s);
+const fromHex = (h) => Uint8Array.from(h.match(/.{2}/g), (b) => parseInt(b, 16));
+let _nip44 = null;
+async function nip44() {
+  if (_nip44) return _nip44;
+  const m = await import('https://esm.sh/nostr-tools@2.7.2/nip44');
+  _nip44 = m.v2 || m.default || m;
+  return _nip44;
+}
+
 export function mountChat(container, options = {}) {
   const o = { ...DEFAULTS, ...options };
+  const isPrivate = /^[0-9a-f]{64}$/.test(o.secret || '');
+  const roomKey = isPrivate ? fromHex(o.secret) : null;
   ensureStyle();
   container.innerHTML = '';
   const root = document.createElement('div'); root.className = 'tgchat'; root.style.height = typeof o.height === 'number' ? o.height + 'px' : o.height;
@@ -77,6 +94,7 @@ export function mountChat(container, options = {}) {
   const $ = (s) => root.querySelector(s);
   const log = $('.tg-log'), form = $('.tg-bar'), ta = $('.tg-bar textarea'), sendBtn = $('.tg-bar button');
   $('.tg-open').href = 'https://tide-games.github.io/chat/';
+  if (isPrivate) $('.tg-open').remove(); // a private room has no public page
 
   // ------------------------------------------------------------ state
   const sockets = new Map(), acks = new Map(), seen = new Set(), pending = [];
@@ -108,12 +126,17 @@ export function mountChat(container, options = {}) {
     ws.onclose = () => { status(); if (alive) setTimeout(() => connect(url), 5000 + Math.random() * 5000); };
     ws.onerror = () => status();
   }
-  function onEvent(ev) {
+  async function onEvent(ev) {
     if (!ev || typeof ev.id !== 'string' || seen.has(ev.id)) return;
     if (ev.kind === 0) return onProfile(ev);
     if (ev.kind !== 42) return;
     if (!ev.tags.some((t) => t[0] === 'e' && t[1] === o.channel)) return;
-    seen.add(ev.id); pending.push(ev); wantName(ev.pubkey); flush(false);
+    seen.add(ev.id);
+    if (isPrivate) {
+      try { const n = await nip44(); ev = { ...ev, content: n.decrypt(ev.content, roomKey) }; }
+      catch { return; } // another key's line (rotated, or not ours): not shown
+    }
+    pending.push(ev); wantName(ev.pubkey); flush(false);
   }
 
   // ------------------------------------------------------------ names
@@ -225,7 +248,8 @@ export function mountChat(container, options = {}) {
     return { ev, ok, refused };
   }
   async function say(text) {
-    const { ev, ok, refused } = await publish(42, [['e', o.channel, o.relays[0], 'root']], text);
+    const wire = isPrivate ? (await nip44()).encrypt(text, roomKey) : text;
+    const { ev, ok, refused } = await publish(42, [['e', o.channel, o.relays[0], 'root']], wire);
     onEvent(ev);
     if (!ok.length) sys('no relay accepted that: ' + refused.map(([u, r]) => u.replace('wss://', '') + ' — ' + r).join('; '));
   }
@@ -248,9 +272,12 @@ export function mountChat(container, options = {}) {
   }
 
   // ------------------------------------------------------------ boot
-  for (const url of o.relays) connect(url);
-  status();
-  if (o.signer) setSigner(o.signer);
+  (async () => {
+    if (isPrivate) o.channel = hex(await sha256(utf8('tide-chat-room|' + o.secret))); // the room's id, from its key
+    for (const url of o.relays) connect(url);
+    status();
+    if (o.signer) setSigner(o.signer);
+  })();
 
   return {
     el: root,
