@@ -23,7 +23,7 @@ const DEFAULTS = {
 };
 
 const CSS = `
-.tgchat{--tg-paper:#efe4c8;--tg-paper2:#e3d5b3;--tg-ink:#2a2216;--tg-soft:#5c4f3a;--tg-line:#c9b891;--tg-teal:#3e8f8a;--tg-gold:#8a6508;--tg-red:#a63d3d;--tg-field:#fff9ea;
+.tgchat{margin-bottom:28px;--tg-paper:#efe4c8;--tg-paper2:#e3d5b3;--tg-ink:#2a2216;--tg-soft:#5c4f3a;--tg-line:#c9b891;--tg-teal:#3e8f8a;--tg-gold:#8a6508;--tg-red:#a63d3d;--tg-field:#fff9ea;
   display:flex;flex-direction:column;border:1px solid var(--tg-line);border-radius:10px;background:linear-gradient(#f3e9d0,var(--tg-paper) 40%,var(--tg-paper2));color:var(--tg-ink);font-family:Georgia,'Times New Roman',serif;font-size:14px;min-height:0;overflow:hidden}
 .tgchat *{box-sizing:border-box;margin:0}
 .tgchat .tg-log{flex:1;overflow-y:auto;padding:10px 14px;min-height:0;scroll-behavior:smooth}
@@ -96,6 +96,7 @@ export function mountChat(container, options = {}) {
     sockets.set(url, ws);
     ws.onopen = () => {
       ws.send(JSON.stringify(['REQ', 'room', { kinds: [42], '#e': [o.channel], limit: o.history }]));
+      for (const pk of unresolved) askProfile(ws, pk);
       status();
     };
     ws.onmessage = (m) => {
@@ -125,16 +126,19 @@ export function mountChat(container, options = {}) {
       const p = r.ok ? await r.json() : null;
       if (p && (p.display_name || p.name)) name = p.display_name || p.name;
     } catch { /* directory down */ }
-    if (!name) for (const ws of sockets.values()) if (ws.readyState === 1) ws.send(JSON.stringify(['REQ', 'p-' + pk.slice(0, 8), { kinds: [0], authors: [pk], limit: 1 }]));
+    if (!name) { unresolved.add(pk); for (const ws of sockets.values()) askProfile(ws, pk); }
     names.set(pk, name || short(pk)); asking.delete(pk); rerenderNames(pk);
   }
+  // A relay that opens late still gets asked for every name we lack.
+  const unresolved = new Set();
+  function askProfile(ws, pk) { if (ws.readyState === 1) ws.send(JSON.stringify(['REQ', 'p-' + pk.slice(0, 8), { kinds: [0], authors: [pk], limit: 1 }])); }
   function onProfile(ev) {
     try {
       const p = JSON.parse(ev.content);
       const have = profiles.get(ev.pubkey);
       if (!have || have.created_at < ev.created_at) profiles.set(ev.pubkey, { content: p, created_at: ev.created_at });
       const n = p.display_name || p.name;
-      if (n && (!names.has(ev.pubkey) || names.get(ev.pubkey) === short(ev.pubkey) || ev.pubkey === me)) { names.set(ev.pubkey, n); rerenderNames(ev.pubkey); }
+      if (n && (!names.has(ev.pubkey) || names.get(ev.pubkey) === short(ev.pubkey) || ev.pubkey === me)) { names.set(ev.pubkey, n); unresolved.delete(ev.pubkey); rerenderNames(ev.pubkey); }
     } catch { /* ignore */ }
   }
   function rerenderNames(pk) {
