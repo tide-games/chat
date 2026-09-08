@@ -40,6 +40,8 @@ const CSS = `
 .tgchat .tg-n.tg-me{color:var(--tg-gold)}
 .tgchat .tg-n.tg-bot{color:var(--tg-red)}
 .tgchat .tg-c{white-space:pre-wrap;word-break:break-word}
+.tgchat .tg-link{color:var(--tg-teal);text-decoration:underline;text-decoration-color:var(--tg-line)}
+.tgchat .tg-link:hover{text-decoration-color:var(--tg-teal)}
 .tgchat .tg-mute{margin-left:8px;font:inherit;font-size:10px;padding:0 6px;border:1px solid var(--tg-line);border-radius:4px;background:transparent;color:var(--tg-soft);opacity:0;cursor:pointer;vertical-align:1px}
 .tgchat .tg-msg:hover .tg-mute,.tgchat .tg-mute:focus-visible{opacity:1}
 @media (hover:none){.tgchat .tg-mute{opacity:.6}}
@@ -66,6 +68,23 @@ function ensureStyle() {
 }
 
 const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+
+// Links, safely: the content stays text nodes; only http(s) URLs become
+// anchors, built as elements (never markup), opening in a new tab. A bare
+// domain stays text — better a missed link than a false one.
+const URL_RE = /https?:\/\/[^\s<>"')\]]+/g;
+function linkify(el, text) {
+  let last = 0;
+  for (const m of text.matchAll(URL_RE)) {
+    if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+    let url = m[0]; let trail = '';
+    while (/[.,;:!?]$/.test(url)) { trail = url.slice(-1) + trail; url = url.slice(0, -1); } // a full stop after a link is not part of it
+    const a = document.createElement('a'); a.href = url; a.textContent = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'tg-link';
+    el.appendChild(a); if (trail) el.appendChild(document.createTextNode(trail));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+}
 const short = (pk) => pk.slice(0, 8) + '…' + pk.slice(-4);
 const hhmm = (ts) => new Date(ts * 1000).toTimeString().slice(0, 5);
 async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
@@ -216,7 +235,7 @@ export function mountChat(container, options = {}) {
       n.textContent = names.get(ev.pubkey) || short(ev.pubkey); n.href = `${o.directory}/${ev.pubkey}`; n.target = '_blank'; n.rel = 'noopener noreferrer'; n.title = ev.pubkey;
       if (ev.pubkey === me) n.classList.add('tg-me');
       if (o.bots.test(n.textContent)) n.classList.add('tg-bot');
-      const c = document.createElement('div'); c.className = 'tg-c'; c.textContent = ev.content;
+      const c = document.createElement('div'); c.className = 'tg-c'; linkify(c, ev.content);
       body.appendChild(n);
       if (ev.pubkey !== me) { const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'tg-mute'; mb.textContent = 'mute'; mb.addEventListener('click', () => toggleMute(ev.pubkey)); body.appendChild(mb); }
       body.appendChild(c); row.appendChild(t); row.appendChild(body);
